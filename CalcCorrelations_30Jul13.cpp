@@ -17,7 +17,8 @@ struct DHSdata {
   double correlation;
 };
 
-void GetMeanVarSD(const vector<double>& vec, double& mean, double& variance, double& SD);
+typedef vector<double>::size_type sizetype;
+
 void GetMeanVarSD(const vector<double>& vec, double& mean, double& variance, double& SD)
 {
   double N(static_cast<double>(vec.size())), sum(0.);
@@ -32,18 +33,17 @@ void GetMeanVarSD(const vector<double>& vec, double& mean, double& variance, dou
       variance = SD = 0;
       return;
     }
-  for (int i = 0; i < vec.size(); i++)
+  for (sizetype i = 0; i < vec.size(); i++)
     sum += vec[i];
   mean = sum / N;
   sum = 0.;
-  for (int i = 0; i < vec.size(); i++)
+  for (sizetype i = 0; i < vec.size(); i++)
     sum += (vec[i] - mean) * (vec[i] - mean);
   variance = sum / (N - 1.);
   SD = sqrt(variance);
 }
 
 // compute Pearson's correlation coefficient; return 0 if SD(a) = 0 or SD(b) = 0
-double correlation(const vector<double>& a, const vector<double>& b);
 double correlation(const vector<double>& a, const vector<double>& b)
 {
   if (a.empty() || b.empty())
@@ -74,12 +74,12 @@ double correlation(const vector<double>& a, const vector<double>& b)
 */
       return 0;
     }
-  for (int i = 0; i < a.size(); i++)
+  for (sizetype i = 0; i < a.size(); i++)
     sum += (a[i] - mean_a) * (b[i] - mean_b);
   return sum / ((N - 1.) * SD_a * SD_b);
 }
 
-bool vecFromVecString(char* pString, vector<double>& vec);
+//bool vecFromVecString(char* pString, vector<double>& vec);
 bool vecFromVecString(char* pString, vector<double>& vec)
 {
   char* p = pString;
@@ -91,13 +91,12 @@ bool vecFromVecString(char* pString, vector<double>& vec)
       return false;
     }
   vec.push_back(atof(p));
-  while (p = strtok(NULL, ","))
+  while ((p = strtok(NULL, ",")))
     vec.push_back(atof(p));
 
   return true;
 }
 
-bool doEverything(ifstream& ifs, ofstream& ofs);
 bool doEverything(ifstream& ifs, ofstream& ofs)
 {
   const long BUFSIZE(900000L); //BUFSIZE(550000L);
@@ -139,7 +138,7 @@ bool doEverything(ifstream& ifs, ofstream& ofs)
       promStringVec = string(p);
       fieldnum++;
       dvec.clear();
-      while (p = strtok(NULL, "\t"))
+      while ((p = strtok(NULL, "\t")))
         {
           d.chrom = string(p);
           fieldnum++;
