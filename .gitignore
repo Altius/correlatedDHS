@@ -1,0 +1,11 @@
+density/
+peaks/
+
+*.bed6
+*.bed
+*~
+
+tags
+totalDeepSeqTagCountsPerCelltype.txt
+
+testing/

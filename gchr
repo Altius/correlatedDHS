@@ -1,0 +1,65 @@
+#!/bin/csh -ef
+##############################
+# Author:  sjn
+# Date:    June 2007
+# Project: Please Save Space
+#############################
+
+
+# Check input args
+if ( $#argv == 0 || $#argv > 2 ) then
+  printf "\nExpect [<chromosome>] <jarch-file>\n"
+  exit -1
+endif
+
+# Locals
+set all = "all"
+set end = ""
+set inFile = ""
+set whichChrom = $all
+if ( $#argv == 1 ) then
+  set inFile = $1
+else
+  set whichChrom = $1
+  set inFile = $2
+endif
+
+
+# Realize that this script depends on the lexicographical ordering of chromosome names
+#  in the jarch file --> must be identical to "what sort-bed would do"
+set inArchive = `tar -tsf $inFile | tr '\n' ' '`
+
+foreach nextFile ($inArchive)
+  set chr = `echo $nextFile:t | cut -f1 -d'.'`
+  if ( ($whichChrom == $all && $chr =~ chr*) || $chr == $whichChrom ) then
+    tar --to-stdout -xf $inFile $nextFile \
+      | bunzip2 -c \
+      | awk -v cName=$chr \
+         'BEGIN {FS="\t"; OFS="\t"; pLen=""; lastEnd=""; cntr=1} ; \
+          { \
+            if ( NF > 1 ) { \
+              if ( lastEnd != "" ) { \
+                start = (lastEnd + $1); \
+                lastEnd = (start + pLen); \
+                print cName, start, lastEnd, "id-"(cntr++), $2; \
+              } else { \
+                lastEnd = ($1 + pLen); \
+                print cName, $1, lastEnd, "id-"(cntr++), $2; \
+              } \
+            } else { \
+              if ( $1 ~ /^p/ ) { \
+                pLen = substr($1, 2); \
+              } else { \
+                start = (lastEnd + $1); \
+                lastEnd = (start + pLen); \
+                print cName, start, lastEnd \
+              } \
+            } \
+          }'
+    if ( $whichChrom == $chr ) then
+      break
+    endif
+  endif
+end
+
+exit 0
