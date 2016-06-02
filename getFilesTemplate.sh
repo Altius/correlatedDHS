@@ -1,8 +1,6 @@
 #! /bin/bash
 # qsub -cwd -N JOB_ID -S /bin/bash scriptname
 
-source ~/.bashrc
-
 DensityFiles=(http://www.uwencode.org/proj/ForDavide/density/A549-DS14289.75.20.uniques-density.36.hg19.bed.jarch
 http://www.uwencode.org/proj/ForDavide/density/AG10803-DS12374.75.20.uniques-density.36.hg19.bed.jarch
 http://www.uwencode.org/proj/ForDavide/density/AoAF-DS13513.75.20.uniques-density.36.hg19.bed.jarch
@@ -177,9 +175,9 @@ http://www.uwencode.org/proj/ForDavide/peaks/T_47D-DS19794.peaks.fdr0.01.hg19.be
 http://www.uwencode.org/proj/ForDavide/peaks/Trophoblast-DS19317.peaks.fdr0.01.hg19.bed.gz
 http://www.uwencode.org/proj/ForDavide/peaks/vHMEC-DS18406.peaks.fdr0.01.hg19.bed.gz)
 
-for file in ${PeakFiles[*]}
+for file in "${PeakFiles[@]}"
 do
-    wget $file
+    wget "$file"
 done
 
 exit

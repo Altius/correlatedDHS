@@ -1,8 +1,6 @@
 #! /bin/bash
 # qsub -cwd -N JOB_ID -S /bin/bash getTagDensitiesInMasterListDHSs_pseudoParallel.sh min_idx max_idx
 
-source ~/.bashrc
-
 if [ "$1" == "" ] || [ "$2" == "" ]; then
     echo -e "Usage:  $0 minIdxInclusive maxIdxInclusive"
     exit
@@ -106,15 +104,15 @@ while [ "$i" -le "$MAX_IDX" ]; do
 # for file in ${files[*]}
 # do
     file=${files[i]}
-    fnameStub=`basename $file | cut -f1 -d '.'`
+    fnameStub=$(basename "$file" | cut -f1 -d '.')
     outfile=$OUTDIR/${fnameStub}_tagDensityInMasterDHSs.bed4
     # No call to sort-bed needed after the awk statement in this case.
     # All fractions will be a multiple of 0.25 in this case, hence --prec 2.
-#    $EXE $file \
-#	| bedmap --echo --bases-uniq-f --echo-map - $MASTER_DHSs \
-#	| awk -F "|" '{if($2!=0){split($1,x,"\t");print $3"\tid\t"$2*x[5];}}' \
-#	| bedmap --delim "\t" --prec 2 --echo --sum $MASTER_DHSs - \
-#	> $outfile
+    #    $EXE $file \
+    #        | bedmap --echo --bases-uniq-f --echo-map - $MASTER_DHSs \
+    #        | awk -F "|" '{if($2!=0){split($1,x,"\t");print $3"\tid\t"$2*x[5];}}' \
+    #        | bedmap --delim "\t" --prec 2 --echo --sum $MASTER_DHSs - \
+    #        > $outfile
 
     # Whoops!  There are many DHSs that are adjacent to each other,
     # such that one 20-bp density measurement can overlap 2 DHSs.
@@ -137,23 +135,25 @@ while [ "$i" -le "$MAX_IDX" ]; do
     # remains safe.  In the event that it does happen, something like 0.25/7.5 of the sum
     # will be zero.
 
-    $EXE $file \
-	| bedops -n -1 - $ENCODE_AWG_BLACKLIST \
-	| bedmap --count --echo --bases-uniq-f --echo-map - $MASTER_DHSs \
-	| awk -F "|" '{split($2,x,"\t");dens=x[5]/7.5; \
-                         if(1==$1) { \
-                            print $4"\tid\t"dens*$3; \
-                         } \
-                         else if (2==$1) { \
-                            split($4,y,";"); \
-                            split(y[1],z,"\t"); \
-                            print y[1]"\tid\t"dens*(z[3]-x[2])*0.05; \
-                            split(y[2],z,"\t"); \
-                            print y[2]"\tid\t"dens*(x[3]-z[2])*0.05; \
-                         } \
-                       }' \
-        | bedmap --delim "\t" --prec 3 --echo --sum $MASTER_DHSs - \
-	> $outfile
+    "$EXE" "$file" \
+        | bedops -n -1 - "$ENCODE_AWG_BLACKLIST" \
+        | bedmap --count --echo --bases-uniq-f --echo-map - "$MASTER_DHSs" \
+        | awk -F "|" \
+            '{
+                 split($2, x, "\t");
+                 dens = x[5] / 7.5;
+                 if(1==$1) {
+                     print $4 "\tid\t" dens * $3;
+                 } else if (2==$1) {
+                     split($4, y, ";");
+                     split(y[1], z, "\t");
+                     print y[1] "\tid\t" dens * (z[3] - x[2]) * 0.05;
+                     split(y[2], z, "\t");
+                     print y[2] "\tid\t" dens * (x[3] - z[2]) * 0.05;
+                 }
+             }' \
+        | bedmap --delim "\t" --prec 3 --echo --sum "$MASTER_DHSs" - \
+        > "$outfile"
     ((i++))
 done
 exit

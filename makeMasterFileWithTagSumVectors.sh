@@ -1,8 +1,6 @@
 #! /bin/bash
 # qsub -cwd -N JOB_ID -S /bin/bash makeMasterFileWithTagSumVectors.sh
 
-source ~/.bashrc
-
 PID=$$
 TEMP1=tempfile1_${PID}.bed
 TEMP2=tempfile2_${PID}.bed
@@ -96,10 +94,10 @@ tagDensities/vHMEC-DS18406_tagDensityInMasterDHSs.bed4)
 MAX_COUNT=0
 for file in ${files[*]}
 do
-    celltype=`basename $file _tagDensityInMasterDHSs.bed4`
-    count=`grep -w $celltype $TT | cut -f2`
+    celltype=$(basename "$file" _tagDensityInMasterDHSs.bed4)
+    count=$(grep -w "$celltype" $TT | cut -f2)
     if [ "$count" -gt "$MAX_COUNT" ]; then
-	MAX_COUNT=$count
+    MAX_COUNT=$count
     fi
 done
 if [ "$MAX_COUNT" == "0" ]; then
@@ -108,29 +106,29 @@ if [ "$MAX_COUNT" == "0" ]; then
 fi
 
 file=A549-DS14289_tagDensityInMasterDHSs.bed4
-celltype=`basename $file _tagDensityInMasterDHSs.bed4`
-count=`grep -w $celltype $TT | cut -f2`
+celltype=$(basename "$file" _tagDensityInMasterDHSs.bed4)
+count=$(grep -w "$celltype" "$TT" | cut -f2)
 if [ "$count" == "" ]; then
     echo -e "Failed to find $celltype in $TT."
     exit
 fi
 
-awk -v count=$count -v maxCount=$MAX_COUNT 'BEGIN{OFS="\t"}{print $1,$2,$3,int(($4*1.0*maxCount/count) + 0.5);}' $file > $TEMP2
+awk -v count="$count" -v maxCount="$MAX_COUNT" 'BEGIN{OFS="\t"}{print $1,$2,$3,int(($4*1.0*maxCount/count) + 0.5);}' "$file" > "$TEMP2"
 
 for file in ${files[*]}
 do
     if [ "$file" == "A549-DS14289_tagDensityInMasterDHSs.bed4" ]; then
-	continue
+    continue
     fi
-    celltype=`basename $file _tagDensityInMasterDHSs.bed4`
-    count=`grep -w $celltype $TT | cut -f2`
+    celltype=$(basename "$file" _tagDensityInMasterDHSs.bed4)
+    count=$(grep -w "$celltype" "$TT" | cut -f2)
     if [ "$count" == "" ]; then
-	echo -e "Failed to find $celltype in $TT."
-	exit
+    echo -e "Failed to find $celltype in $TT."
+    exit
     fi
-    awk -v count=$count -v maxCount=$MAX_COUNT 'BEGIN{OFS="\t"}{print int(($4*1.0*maxCount/count) + 0.5);}' $file \
-	| paste -d "," $TEMP2 - \
-	> $TEMP1
+    awk -v count="$count" -v maxCount="$MAX_COUNT" 'BEGIN{OFS="\t"}{print int(($4*1.0*maxCount/count) + 0.5);}' "$file" \
+    | paste -d "," $TEMP2 - \
+    > $TEMP1
     mv $TEMP1 $TEMP2
 done
 mv $TEMP2 $outfile

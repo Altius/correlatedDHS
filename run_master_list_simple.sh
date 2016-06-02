@@ -1,11 +1,9 @@
 #! /bin/bash
 # qsub -cwd -N JOB_ID -S /bin/bash run_master_list_simple.sh
 
-source ~/.bashrc
-
 ENCODE_AWG_BLACKLIST=wgEncodeHg19ConsensusSignalArtifactRegions.bed
 
-## Make master set of unique DHS positions in the genome.  This will be the union of 
+## Make master set of unique DHS positions in the genome.  This will be the union of
 ## the MCV peaks and all single-cell strict peaks not in MCV zones.
 ## Also extract the "cell-type predominant" set.  This is everything that's left over from the
 ## single-cell line union after you subtract off MCV and CTS.
@@ -101,20 +99,20 @@ allpks=(peaks/A549-DS14289.peaks.fdr0.01.hg19.bed.gz
     peaks/Trophoblast-DS19317.peaks.fdr0.01.hg19.bed.gz
     peaks/vHMEC-DS18406.peaks.fdr0.01.hg19.bed.gz)
 
-mkdir -p $tmpd
+mkdir -p "$tmpd"
 
-rm -f $tmp
+rm -f "$tmp"
 echo "union-ing single-cell sets..."
 
 for pks in ${allpks[*]}
 do
-    proj=`basename $pks | cut -f1 -d '.'`
-    zcat $pks \
-	| awk -v p=$proj '{print $1"\t"$2"\t"$3"\t"p"\t"$8}' - \
-	| bedops -n -1 - $ENCODE_AWG_BLACKLIST \
-	>> $tmp
-    N=`zcat $pks | wc -l`
-    printf "%-15s %7d\n" `echo $proj  | sed s/-DS.*//` $N
+    proj=$(basename "$pks" | cut -f1 -d '.')
+    zcat "$pks" \
+    | awk -v p="$proj" '{print $1"\t"$2"\t"$3"\t"p"\t"$8}' - \
+    | bedops -n -1 - "$ENCODE_AWG_BLACKLIST" \
+    >> "$tmp"
+    N=$(zcat "$pks" | wc -l)
+    printf "%-15s %7d\n" "${proj/-DS.*/}" "$N"
 done
 
 echo "sorting..."
@@ -127,38 +125,38 @@ do
     echo "merge steps..."
     ## This klugey bit before and after the merging is because we don't want to merge regions that are simply adjacent but not overlapping
     awk '{print $1"\t"$2"\t"$3-1}' $tmpo \
-	| bedops -m - \
-	| awk '{print $1"\t"$2"\t"$3+1}' - \
-	> $tmpm
-    
+    | bedops -m - \
+    | awk '{print $1"\t"$2"\t"$3+1}' - \
+    > $tmpm
+
     bedmap --max $tmpm $tmpo \
-	> $tmpms
+    > $tmpms
     awk '{print $1"\t"$2"\t"$3"\tI"}' $tmpm \
-	| paste - $tmpms \
-	| bedmap --max $tmpo - \
-	| paste $tmpo - \
-	| awk '($5==$6)' - \
-	| cut -f1-4,6 - \
-	> $tmp
+    | paste - $tmpms \
+    | bedmap --max $tmpo - \
+    | paste $tmpo - \
+    | awk '($5==$6)' - \
+    | cut -f1-4,6 - \
+    > $tmp
     ## There may be some ties -- now go through and take one representative from the adjacent ties
     echo "remove adjacent ties..."
     awk '{print $1"\t"$2"\t"$3-1}' $tmp \
-	| bedops -m - \
-	| awk '{print $1"\t"$2"\t"$3+1}' - \
-	| bedmap --multidelim "\t" --echo-map - $tmp \
-	| cut -f1-5 \
-	> $tmp2
+    | bedops -m - \
+    | awk '{print $1"\t"$2"\t"$3+1}' - \
+    | bedmap --multidelim "\t" --echo-map - $tmp \
+    | cut -f1-5 \
+    > $tmp2
     ## Now add in stuff that doesn't intersect our current set
     bedops -n -0% $tmpo $tmp2 \
-	> $tmp
+    > $tmp
     if [ -s $tmp ]
     then
-	echo "Adding `wc -l $tmp | cut -d' ' -f1 -` elements"
-	bedops -u $tmp $tmp2 \
-	    > $tmpo
+        echo "Adding $(wc -l $tmp | cut -d' ' -f1 -) elements"
+    bedops -u $tmp $tmp2 \
+        > $tmpo
     else
-	cp $tmp2 $tmpo
-	stop=1
+    cp $tmp2 $tmpo
+    stop=1
     fi
 done
 

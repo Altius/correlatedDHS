@@ -8,12 +8,10 @@ if [ "$1" == "" ] || [ "$2" == "" ] || [ "$3" == "" ]; then
 fi
 
 fileOfFilenames=$1
-if [ ! -s $fileOfFilenames ]; then
+if [ ! -s "$fileOfFilenames" ]; then
     echo -e "Error:  File $fileOfFilenames is empty, or was not found."
     exit 1
 fi
-
-source ~/.bashrc
 
 ENCODE_AWG_BLACKLIST=wgEncodeHg19ConsensusSignalArtifactRegions.bed
 
@@ -31,30 +29,30 @@ MASTER_DHSs=masterDHSs.bed3
 #    density/AoAF-DS13513.75.20.uniques-density.36.hg19.bed.jarch
 filenum=0
 linenum=1
-cat $fileOfFilenames | while read line
+cat "$fileOfFilenames" | while read line
 do
     if [ "$filenum" -lt "$MIN_IDX" ]; then
-	((filenum++))
-	((linenum++))
-	continue
+    ((filenum++))
+    ((linenum++))
+    continue
     fi
     if [ "$filenum" -gt "$MAX_IDX" ]; then
-	break
+    break
     fi
     file=$line
-    if [ ! -s $file ]; then
+    if [ ! -s "$file" ]; then
         echo "Error:  File $file,"
         echo "on line $linenum of $fileOfFilenames, was not found."
-	exit 1
+    exit 1
     fi
-    is_jarch=`basename $pks | grep '\.jarch$' | wc -l`
-    is_starch=`basename $pks | grep '\.starch$' | wc -l`
-    if [ "$is_jarch" == "0" && "is_starch" == "0" ]; then
-	echo -e "Error:  Expect each density file to be in .jarch or .starch format. File $file,"
-	echo -e "on line $linenum of $fileOfFilenames, does not end in .jarch or .starch."
-	exit 1
+    is_jarch=$(basename "$file" | grep -c '\.jarch$')
+    is_starch=$(basename "$file" | grep -c '\.starch$')
+    if [ "$is_jarch" == "0" ] &&  [ "$is_starch" == "0" ]; then
+    echo -e "Error:  Expect each density file to be in .jarch or .starch format. File $file,"
+    echo -e "on line $linenum of $fileOfFilenames, does not end in .jarch or .starch."
+    exit 1
     fi
-    fnameStub=`basename $file | cut -f1 -d '.'`
+    fnameStub=$(basename "$file" | cut -f1 -d '.')
     outfile=$OUTDIR/${fnameStub}_tagDensityInMasterDHSs.bed4
     # There are often many DHSs that are adjacent to each other,
     # such that one 20-bp density measurement can overlap 2 DHSs.
@@ -77,40 +75,40 @@ do
     # remains safe.  In the event that it does happen, something like 0.25/7.5 of the sum
     # will be zero.
     if [ "$is_jarch" == "1" ]; then
-	$EXE $file \
-	    | bedops -n -1 - $ENCODE_AWG_BLACKLIST \
-	    | bedmap --count --echo --bases-uniq-f --echo-map - $MASTER_DHSs \
-	    | awk -F "|" '{split($2,x,"\t");dens=x[5]/7.5; \
-                         if(1==$1) { \
-                            print $4"\tid\t"dens*$3; \
-                         } \
-                         else if (2==$1) { \
-                            split($4,y,";"); \
-                            split(y[1],z,"\t"); \
-                            print y[1]"\tid\t"dens*(z[3]-x[2])*0.05; \
-                            split(y[2],z,"\t"); \
-                            print y[2]"\tid\t"dens*(x[3]-z[2])*0.05; \
-                         } \
+    "$EXE" "$file" \
+        | bedops -n -1 - "$ENCODE_AWG_BLACKLIST" \
+        | bedmap --count --echo --bases-uniq-f --echo-map - "$MASTER_DHSs" \
+        | awk -F "|" '{split($2,x,"\t");dens=x[5]/7.5;
+                         if(1==$1) {
+                            print $4"\tid\t"dens*$3;
+                         }
+                         else if (2==$1) {
+                            split($4,y,";");
+                            split(y[1],z,"\t");
+                            print y[1]"\tid\t"dens*(z[3]-x[2])*0.05;
+                            split(y[2],z,"\t");
+                            print y[2]"\tid\t"dens*(x[3]-z[2])*0.05;
+                         }
                        }' \
             | bedmap --delim "\t" --prec 3 --echo --sum $MASTER_DHSs - \
-	    > $outfile
+        > "$outfile"
     else
-	bedops -n -1 $file $ENCODE_AWG_BLACKLIST \
-	    | bedmap --count --echo --bases-uniq-f --echo-map - $MASTER_DHSs \
-	    | awk -F "|" '{split($2,x,"\t");dens=x[5]/7.5; \
-                         if(1==$1) { \
-                            print $4"\tid\t"dens*$3; \
-                         } \
-                         else if (2==$1) { \
-                            split($4,y,";"); \
-                            split(y[1],z,"\t"); \
-                            print y[1]"\tid\t"dens*(z[3]-x[2])*0.05; \
-                            split(y[2],z,"\t"); \
-                            print y[2]"\tid\t"dens*(x[3]-z[2])*0.05; \
-                         } \
+    bedops -n -1 "$file" "$ENCODE_AWG_BLACKLIST" \
+        | bedmap --count --echo --bases-uniq-f --echo-map - "$MASTER_DHSs" \
+        | awk -F "|" '{split($2,x,"\t");dens=x[5]/7.5;
+                         if(1==$1) {
+                            print $4"\tid\t"dens*$3;
+                         }
+                         else if (2==$1) {
+                            split($4,y,";");
+                            split(y[1],z,"\t");
+                            print y[1]"\tid\t"dens*(z[3]-x[2])*0.05;
+                            split(y[2],z,"\t");
+                            print y[2]"\tid\t"dens*(x[3]-z[2])*0.05;
+                         }
                        }' \
-            | bedmap --delim "\t" --prec 3 --echo --sum $MASTER_DHSs - \
-	    > $outfile
+            | bedmap --delim "\t" --prec 3 --echo --sum "$MASTER_DHSs" - \
+        > "$outfile"
     fi
     ((filenum++))
     ((linenum++))
