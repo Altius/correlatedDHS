@@ -12,8 +12,7 @@ if [ ! -s "$fileOfFilenames" ]; then
     exit 1
 fi
 
-# ENCODE_AWG_BLACKLIST=wgEncodeHg19ConsensusSignalArtifactRegions.bed
-ENCODE_AWG_BLACKLIST=/home/rsandstrom/development/AWG/blacklist/wgEncodeHg19ConsensusSignalArtifactRegions.bed
+ENCODE_AWG_BLACKLIST=wgEncodeHg19ConsensusSignalArtifactRegions.bed
 
 ## Make master set of unique DHS positions in the genome.  This will be the union of
 ## the MCV peaks and all single-cell strict peaks not in MCV zones.

@@ -14,7 +14,7 @@ OUTFILE_THRESHOLDED_PROM_FIRST=$4
 OUTFILE_ALL_DISTAL_FIRST=$5
 OUTFILE_THRESHOLDED_DISTAL_FIRST=$6
 
-EXE=/net/lebowski/vol1/work/erynes/data/DNasePatternMatching/gencode10/24Jul13andBeyond/33celltypes/CalcCorrelations_30Jul13
+EXE=correlate_dhs
 
 "$EXE" "$INFILE" "$OUTFILE_ALL_PROM_FIRST"
 
