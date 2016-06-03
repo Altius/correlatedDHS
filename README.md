@@ -9,15 +9,9 @@ TODO: Add some real text here.
 If you have not already installed BEDOPS, you'll need to do so, from
 <https://github.com/bedops/bedops>
 
-Compile the following .cpp file via the following command, or a command similar
-to it:
+Compile the code with:
 
-    g++ src/correlate_dhs.cpp -o correlate_dhs
-
-(The above command will create the executable file CalcCorrelations_30Jul13 from
-the source code file CalcCorrelations_30Jul13.cpp. This executable will be run
-from one of the scripts.)
-
+    make
 
 ## Creating the "master list" file.
 
