@@ -12,7 +12,7 @@ If you have not already installed BEDOPS, you'll need to do so, from
 Compile the following .cpp file via the following command, or a command similar
 to it:
 
-    g++ CalcCorrelations_30Jul13.cpp -o CalcCorrelations_30Jul13
+    g++ src/correlate_dhs.cpp -o correlate_dhs
 
 (The above command will create the executable file CalcCorrelations_30Jul13 from
 the source code file CalcCorrelations_30Jul13.cpp. This executable will be run
