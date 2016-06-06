@@ -1,9 +1,9 @@
 #! /bin/bash
-# qsub -cwd -N JOB_ID -S /bin/bash newCalcCorrelations_receiveThreshold.sh
+# qsub -cwd -N JOB_ID -S /bin/bash calcCorrelations.sh
 
 if [ "$1" == "" ] || [ "$2" == "" ] || [ "$3" == "" ] || [ "$4" == "" ] || [ "$5" == "" ] || [ "$6" == "" ]; then
     echo -e "Usage:  $0 infile THRESHOLD outfile_all_promotersFirst.bed8 outfile_aboveTHRESHOLD_promotersFirst.bed8 outfile_all_distalsFirst.bed8 outfile_aboveTHRESHOLD_distalsFirst.bed8"
-    echo -e "\twhere THRESHOLD is traditionally 0.7, currently 0.5"
+    echo -e "\twhere THRESHOLD is traditionally 0.7"
     exit
 fi
 
@@ -15,6 +15,15 @@ OUTFILE_ALL_DISTAL_FIRST=$5
 OUTFILE_THRESHOLDED_DISTAL_FIRST=$6
 
 EXE=correlate_dhs
+
+if [ ! -s "$EXE" ]; then
+    echo -e "Error:  Unable to find required file $EXE."
+    exit
+fi
+if [ ! -s "$INFILE" ]; then
+    echo -e "Error:  Unable to find required input file $INFILE."
+    exit
+fi
 
 "$EXE" "$INFILE" "$OUTFILE_ALL_PROM_FIRST"
 
