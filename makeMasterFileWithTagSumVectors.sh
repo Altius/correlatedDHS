@@ -92,6 +92,7 @@ tagDensities/Trophoblast-DS19317_tagDensityInMasterDHSs.bed4
 tagDensities/vHMEC-DS18406_tagDensityInMasterDHSs.bed4)
 
 MAX_COUNT=0
+set -x
 for file in ${files[*]}
 do
     celltype=$(basename "$file" _tagDensityInMasterDHSs.bed4)
@@ -105,7 +106,7 @@ if [ "$MAX_COUNT" == "0" ]; then
     exit
 fi
 
-file=A549-DS14289_tagDensityInMasterDHSs.bed4
+file="${files[0]}"
 celltype=$(basename "$file" _tagDensityInMasterDHSs.bed4)
 count=$(grep -w "$celltype" "$TT" | cut -f2)
 if [ "$count" == "" ]; then
@@ -117,7 +118,7 @@ awk -v count="$count" -v maxCount="$MAX_COUNT" 'BEGIN{OFS="\t"}{print $1,$2,$3,i
 
 for file in ${files[*]}
 do
-    if [ "$file" == "A549-DS14289_tagDensityInMasterDHSs.bed4" ]; then
+    if [ "$file" == "${files[0]}" ]; then
     continue
     fi
     celltype=$(basename "$file" _tagDensityInMasterDHSs.bed4)
