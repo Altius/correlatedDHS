@@ -1,6 +1,6 @@
-# What is it?
+# Description
 
-TODO: Add some real text here.
+This is a set of scripts and an executable to calculate DHS correlation between samples or cell-types.
 
 # How to Use
 
@@ -12,6 +12,15 @@ If you have not already installed BEDOPS, you'll need to do so, from
 Compile the code with:
 
     make
+
+## Easy usage:
+
+If you have an SGE cluster available (`qsub`), run `./doEverything.sh` and wait for the jobs to finish.
+
+
+# How it works, step-by-step
+
+The `./doEverything.sh` script does the following steps for you - if you want to see the reasoning for any steps, look here:
 
 ## Creating the "master list" file.
 
@@ -88,8 +97,8 @@ support.
 
 This is the command I submitted to our cluster, to define promoter DHSs:
 
-    qsub -cwd -N GetProms -S /bin/bash getPromoterDHSs_TryToIncreaseQuality.sh \
-        EHl_v2_TxStarts.bed6 masterDHSsAndTagCounts_82_hg19.bed4 10000 2500 20 100 promOutfile.bed13
+    qsub -cwd -N GetProms -S /bin/bash getPromoterDHSs \
+        EH_v2_TxStarts.bed6 masterDHSsAndTagCounts_82_hg19.bed4 10000 2500 20 100 promOutfile.bed13
 
 You can also run it directly from the command line, if desired; this one doesn't
 take very long to execute (a couple minutes, I think).
@@ -101,8 +110,8 @@ needs to be reversed. So after the script runs to completion, the first thing we
 need to do is reverse the order and filter out any "NA" entries, by running a
 command like this:
 
-    awk 'BEGIN{OFS="\t"}{if($13!="NA"){print $5,$6,$7,$4,".",$8,$1,$2,$3;}}'
-    promOutfile.bed13 \
+    awk 'BEGIN{OFS="\t"}{if($13!="NA"){print $5,$6,$7,$4,".",$8,$1,$2,$3;}}' \
+        promOutfile.bed13 \
         | tr '\t' '@' \
         | sort -k 1b,1 \
         | uniq \
@@ -185,11 +194,11 @@ Then, pick a threshold you're particularly interested in (e.g., 0.7), and supply
 this and your preferred names for the output files to the following script, like
 this:
 
-    qsub -cwd -N GetCorrs500kb0.7 -S /bin/bash newCalcCorrelations_receiveThreshold.sh \
+    qsub -cwd -N GetCorrs500kb0.7 -S /bin/bash calcCorrelations.sh \
         inputForCorrelationCalculations_500kb_82celltypes.bed 0.7 corrs_promsFirst_EHv2_all_82celltypes_500kb.bed8 \
         corrs_promsFirst_EHv2_above0.7_82celltypes_500kb.bed8 \
         corrs_distalsFirst_EHv2_all_82celltypes_500kb.bed8 \
-        corrs_distalsFirst_EHv2_above0.5_82celltypes_500kb.bed8
+        corrs_distalsFirst_EHv2_above0.7_82celltypes_500kb.bed8
 
 It will create 4 output files. One will contain all distal/promoter pairs and
 their correlations (Pearson's _r_), in the format promoter, gene name, distal
