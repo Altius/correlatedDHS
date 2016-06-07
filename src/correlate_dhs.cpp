@@ -21,25 +21,25 @@ typedef vector<double>::size_type sizetype;
 
 void GetMeanVarSD(const vector<double>& vec, double& mean, double& variance, double& SD)
 {
-  double N(static_cast<double>(vec.size())), sum(0.);
-  if (!N)
+  double N(static_cast<double>(vec.size())), sum(0.), sumOfSquares(0.);
+  if (vec.empty())
     {
       cerr << "Error:  GetMeanVarSD() received an empty vector." << endl;
       exit(1);
     }
-  if (1. == N)
+  if (fabs(N - 1.) < 0.001)
     {
       mean = vec[0];
       variance = SD = 0;
       return;
     }
   for (sizetype i = 0; i < vec.size(); i++)
-    sum += vec[i];
+    {
+      sum += vec[i];
+      sumOfSquares += vec[i]*vec[i];
+    }
   mean = sum / N;
-  sum = 0.;
-  for (sizetype i = 0; i < vec.size(); i++)
-    sum += (vec[i] - mean) * (vec[i] - mean);
-  variance = sum / (N - 1.);
+  variance = (sumOfSquares - N*mean*mean) / (N - 1.);
   SD = sqrt(variance);
 }
 
