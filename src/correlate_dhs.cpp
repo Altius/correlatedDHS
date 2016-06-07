@@ -79,7 +79,6 @@ double correlation(const vector<double>& a, const vector<double>& b)
   return sum / ((N - 1.) * SD_a * SD_b);
 }
 
-//bool vecFromVecString(char* pString, vector<double>& vec);
 bool vecFromVecString(char* pString, vector<double>& vec)
 {
   char* p = pString;
@@ -193,7 +192,7 @@ bool doEverything(ifstream& ifs, ofstream& ofs)
 
           ofs << promChrom << '\t' << promBeg << '\t' << promEnd << '\t' << promGene << '\t'
               << dvec[i].chrom << '\t' << dvec[i].beg << '\t' << dvec[i].end << '\t' << dvec[i].correlation
-              << endl;
+              << "\n";
         }
     }
 
