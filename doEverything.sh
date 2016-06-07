@@ -20,7 +20,8 @@ densityfileNames=$2
 #qsub -cwd -N RunML -S run_master_list_simple__receiveInputFileOfFilenames.sh $peakfileNames
 # Hmmm, need to check exit status....
 
-PATH=$(dirname $0)/$PATH
+PATH=$(dirname $0):$PATH
+PATH=$(dirname $0)/bin:$PATH
 
 if ! which bedops 2>&1 >/dev/null ; then
     echo "Bedops must be installed and available on the PATH" >&2
@@ -31,7 +32,7 @@ SETUP_JOB=".setupdhs"
 DENS_JOB=".densitydhs"
 FINISH_JOB=".finishdhs"
 
-submit -N "$SETUP_JOB" <<__SETUP__
+submit -N "$SETUP_JOB" <<'__SETUP__'
     set -x
     date
 
@@ -41,7 +42,7 @@ submit -N "$SETUP_JOB" <<__SETUP__
     date
 __SETUP__
 
-submit -hold_jid "$SETUP_JOB" -N "$DENS_JOB" -t "$NUMFILES" <<__DENSITY__
+submit -hold_jid "$SETUP_JOB" -N "$DENS_JOB" -t "$NUMFILES" <<'__DENSITY__'
     set -x
     date
 
@@ -50,19 +51,19 @@ submit -hold_jid "$SETUP_JOB" -N "$DENS_JOB" -t "$NUMFILES" <<__DENSITY__
     date
 __DENSITY__
 
-submit -hold_jid "$DENS_JOB" -N "$FINISH_JOB" <<__FINISH__
+submit -hold_jid "$DENS_JOB" -N "$FINISH_JOB" <<'__FINISH__'
     set -x
     date
     makeMasterFileWithTagSumVectors.sh
 
     date
-    getPromoterDHSs \
+    getPromoterDHSs.sh \
         EH_v2_TxStarts.bed6 masterDHSsAndTagCounts_82_hg19.bed4 \
         10000 2500 20 100 \
         promOutfile.bed13
 
     date
-    awk 'BEGIN{OFS="\t"}{if($13!="NA"){print $5,$6,$7,$4,".",$8,$1,$2,$3;}}'
+    awk 'BEGIN{OFS="\t"}{if($13!="NA"){print $5,$6,$7,$4,".",$8,$1,$2,$3;}}' \
     promOutfile.bed13 \
         | tr '\t' '@' \
         | sort -k 1b,1 \
@@ -114,5 +115,4 @@ submit -hold_jid "$DENS_JOB" -N "$FINISH_JOB" <<__FINISH__
         corrs_distalsFirst_EHv2_above0.7_82celltypes_500kb.bed8
 
     date
-    rm inputForCorrelationCalculations_500kb_82celltypes.bed
-    __FINISH__
+__FINISH__

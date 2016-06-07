@@ -16,7 +16,7 @@ OUTFILE_THRESHOLDED_DISTAL_FIRST=$6
 
 EXE=correlate_dhs
 
-if [ ! -s "$EXE" ]; then
+if ! which "$EXE" 2>&1 >/dev/null ; then
     echo -e "Error:  Unable to find required file $EXE."
     exit
 fi
