@@ -52,13 +52,6 @@ etc. etc. The first job would process the first 8 cell types (0-7), the next one
 would process the next 8 cell types (8-15), etc., simultaneously, with one job
 per node of a computer cluster. There are 82 cell types total (0-81).
 
-IMPORTANT NOTE:  The script `getTagDensitiesInMasterListDHSs_pseudoParallel.sh`
-calls the script gchr (included), which is a "C shell" script. If
-`getTagDensitiesInMasterListDHSs_pseudoParallel.sh` fails to execute gchr, ask
-Michael for guidance on how to set things up. (All scripts in this directory are
-designed to run in Bourne shell; they might run fine in other shells too; I
-don't know offhand what issues might arise.)
-
 After all of those jobs have completed and produced 82 files in subdirectory
 tagDensities, run the following script:
 
