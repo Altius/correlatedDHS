@@ -1,6 +1,8 @@
 # Description
 
-This is a set of scripts and an executable to calculate DHS correlation between samples or cell-types.
+This is a set of scripts and an executable to calculate DHS correlation between
+samples or cell-types. An example input set is described in
+`example_file_accessions.txt`
 
 # How to Use
 
