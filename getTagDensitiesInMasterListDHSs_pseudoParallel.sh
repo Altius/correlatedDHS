@@ -14,7 +14,7 @@ MAX_IDX=$2
 OUTDIR=tagDensities
 mkdir -p $OUTDIR
 
-EXE=gchr
+EXE=unstarch
 MASTER_DHSs=masterDHSs.bed3
 files=(density/A549-DS14289.75.20.uniques-density.36.hg19.bed.jarch
     density/AG10803-DS12374.75.20.uniques-density.36.hg19.bed.jarch
