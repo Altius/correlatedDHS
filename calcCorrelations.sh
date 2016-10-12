@@ -30,8 +30,8 @@ fi
 if [ -s "$OUTFILE_ALL_PROM_FIRST" ]; then
     awk -v threshold="$THRESHOLD" '{if($8>=threshold){print;}}' "$OUTFILE_ALL_PROM_FIRST" > "$OUTFILE_THRESHOLDED_PROM_FIRST"
     awk 'BEGIN{OFS="\t"}{print $5,$6,$7,$4,$1,$2,$3,$8;}' "$OUTFILE_ALL_PROM_FIRST" \
-    | sort-bed - \
-    > "$OUTFILE_ALL_DISTAL_FIRST"
+        | sort-bed - \
+        > "$OUTFILE_ALL_DISTAL_FIRST"
     awk -v threshold="$THRESHOLD" '{if($8>=threshold){print;}}' "$OUTFILE_ALL_DISTAL_FIRST" > "$OUTFILE_THRESHOLDED_DISTAL_FIRST"
 fi
 

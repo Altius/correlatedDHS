@@ -1,8 +1,6 @@
 #! /bin/bash
 # doEverything.sh
 
-NUMFILES=${NUMFILES:-82}
-
 submit(){
     qsub -cwd -V -S /bin/bash "$@"
 }
@@ -10,12 +8,52 @@ submit(){
 set -e -o pipefail # quit when any section of any pipe, or single command, fails
 
 if [ "$1" == "" ] || [ "$2" == "" ]; then
-    echo -e "Usage:  $0 fileOfPeakfileNames.txt fileOfDensityfileNames.txt"
+    echo -e "Usage:  $0 fileOfPeakDensityAndCounts.txt TSSfile.bed6" "[blacklistfile]"
+    echo -e "\tfileOfPeakDensityAndCounts.txt should contain one sample per line in the following format:"
+    echo -e "\tColumn 1: /path/to/peak/file"
+    echo -e "\tColumn 2: /path/to/density/file"
+    echo -e "\tColumn 3: Total mapped tags"
+    echo -e "\tBlacklist file is optional"
     exit 1
 fi
 
-peakfileNames=$1
-densityfileNames=$2
+sampleFile=$1
+tssFile=$2
+
+if [ ! -f "$sampleFile" ]; then
+    echo -e "Unable to find file \"$sampleFile\"."
+    exit
+fi
+
+if [ ! -f "$tssFile" ]; then
+    echo -e "Unable to find file \"$tssFile\"."
+    exit
+fi
+#Check for optional blacklist file, set blacklist to /dev/null if not supplied
+if [ ! -z "$3" ]; then
+    blacklist=$3
+    if [ ! -f "$blacklist" ]; then
+        echo -e "Unable to find file \"$blacklist\"."
+        exit
+    fi
+else
+    blacklist=/dev/null
+fi
+
+#Get the number of samples
+NUMFILES=$(cat $sampleFile | wc -l)
+
+PID=$$
+SAMPLE_NAMES=sampleNames_${PID}.txt
+RAW_COUNTS=rawCounts_${PID}.txt
+
+cut -f3 $sampleFile > $RAW_COUNTS
+cat "$sampleFile" | while read peakPath restOfLine
+do
+    basename "$peakPath" | cut -f1 -d '.' >> $SAMPLE_NAMES
+done
+paste $SAMPLE_NAMES $RAW_COUNTS > totalTagCountsPerSample.txt
+rm -f $RAW_COUNTS $SAMPLE_NAMES
 
 #qsub -cwd -N RunML -S run_master_list_simple__receiveInputFileOfFilenames.sh $peakfileNames
 # Hmmm, need to check exit status....
@@ -32,87 +70,88 @@ SETUP_JOB=".setupdhs"
 DENS_JOB=".densitydhs"
 FINISH_JOB=".finishdhs"
 
-submit -N "$SETUP_JOB" <<'__SETUP__'
+submit -N "$SETUP_JOB" <<__SETUP__
     set -x
     date
 
-    run_master_list_simple.sh
-    cut -f1-3 multi-tissue.master.hg19.bed > masterDHSs.bed3
+    run_master_list_simple__receiveInputFileOfFilenames.sh "$sampleFile" multi-tissue.master.bed "$blacklist"
 
     date
 __SETUP__
 
-submit -hold_jid "$SETUP_JOB" -N "$DENS_JOB" -t "$NUMFILES" <<'__DENSITY__'
+
+submit -hold_jid "$SETUP_JOB" -N "$DENS_JOB" -t 1-"$NUMFILES":10 <<__DENSITY__
     set -x
     date
 
-    getTagDensitiesInMasterListDHSs_pseudoParallel.sh "$SGE_TASK_ID" "$SGE_TASK_ID"
+    getTagDensitiesInMasterListDHSs_pseudoParallel_receiveFileOfFilenames.sh $sampleFile $blacklist
 
     date
 __DENSITY__
 
-submit -hold_jid "$DENS_JOB" -N "$FINISH_JOB" <<'__FINISH__'
+
+submit -hold_jid "$DENS_JOB" -N "$FINISH_JOB" <<__FINISH__
     set -x
     date
     makeMasterFileWithTagSumVectors.sh
 
     date
     getPromoterDHSs.sh \
-        EH_v2_TxStarts.bed6 masterDHSsAndTagCounts_82_hg19.bed4 \
+        $tssFile masterDHSsAndTagCounts.bed4 \
         10000 2500 20 100 \
         promOutfile.bed13
 
     date
-    awk 'BEGIN{OFS="\t"}{if($13!="NA"){print $5,$6,$7,$4,".",$8,$1,$2,$3;}}' \
+    awk 'BEGIN{OFS="\t"}{if(\$13!="NA"){print \$5,\$6,\$7,\$4,".",\$8,\$1,\$2,\$3;}}' \
     promOutfile.bed13 \
         | tr '\t' '@' \
         | sort -k 1b,1 \
         | uniq \
         | tr '@' '\t' \
         | sort-bed - \
-        > promDHSsAndTheirTSSs_EHv2_82celltypes_hg19.bed9
+        > promDHSsAndTheirTSSs.bed9
 
     date
-    cut -f1-4 promDHSsAndTheirTSSs_EHv2_82celltypes_hg19.bed9 \
+    cut -f1-4 promDHSsAndTheirTSSs.bed9 \
         | tr '\t' '@' \
         | sort -k 1b,1 \
         | uniq \
         | tr '@' '\t' \
         | sort-bed - \
-        > promDHSsWithGeneNames_EHv2_82celltypes_hg19.bed4
+        > promDHSsWithGeneNames.bed4
 
     date
     bedmap --exact --delim "\t" --echo --echo-map-id \
-        promDHSsWithGeneNames_EHv2_82celltypes_hg19.bed4 \
-        masterDHSsAndTagCounts_82_hg19.bed4 \
-        > promDHSsWithGeneNamesAndTagCounts_EHv2_82celltypes_hg19.bed5
+        promDHSsWithGeneNames.bed4 \
+        masterDHSsAndTagCounts.bed4 \
+        > promDHSsWithGeneNamesAndTagCounts.bed5
 
     date
-    cut -f1-3 promDHSsWithGeneNamesAndTagCounts_EHv2_82celltypes_hg19.bed5 \
+    cut -f1-3 promDHSsWithGeneNamesAndTagCounts.bed5 \
         | uniq \
-        | bedops -n -1 masterDHSsAndTagCounts_82_hg19.bed4 - \
+        | bedops -n -1 masterDHSsAndTagCounts.bed4 - \
         > nonprom_temp.bed4
 
     date
     closest-features --shortest --dist nonprom_temp.bed4 \
-        promDHSsAndTheirTSSs_EHv2_82celltypes_hg19.bed9 \
-        | awk -F "|" '{dist=$3;if(dist<0){dist=-dist;}if(dist>=1000){print $1;}}' \
-        > nonPromoterDHSsAndTheirTagCounts_eachAtLeast1kbFromPromDHS_82celltypes.bed4
+        promDHSsAndTheirTSSs.bed9 \
+        | awk -F "|" '{dist=\$3;if(dist<0){dist=-dist;}if(dist>=1000){print \$1;}}' \
+        > nonPromoterDHSsAndTheirTagCounts_eachAtLeast1kbFromPromDHS.bed4
 
     date
     bedmap --range 500000 --skip-unmapped --echo --echo-map \
-        promDHSsWithGeneNamesAndTagCounts_EHv2_82celltypes_hg19.bed5 \
-        nonPromoterDHSsAndTheirTagCounts_eachAtLeast1kbFromPromDHS_82celltypes.bed4 \
-        > inputForCorrelationCalculations_500kb_82celltypes.bed
+        promDHSsWithGeneNamesAndTagCounts.bed5 \
+        nonPromoterDHSsAndTheirTagCounts_eachAtLeast1kbFromPromDHS.bed4 \
+        > inputForCorrelationCalculations_500kb.bed
 
     date
     calcCorrelations.sh \
-        inputForCorrelationCalculations_500kb_82celltypes.bed \
+        inputForCorrelationCalculations_500kb.bed \
         0.7 \
-        corrs_promsFirst_EHv2_all_82celltypes_500kb.bed8 \
-        corrs_promsFirst_EHv2_above0.7_82celltypes_500kb.bed8 \
-        corrs_distalsFirst_EHv2_all_82celltypes_500kb.bed8 \
-        corrs_distalsFirst_EHv2_above0.7_82celltypes_500kb.bed8
+        corrs_promsFirst_all_celltypes_500kb.bed8 \
+        corrs_promsFirst_above0.7_celltypes_500kb.bed8 \
+        corrs_distalsFirst_all_celltypes_500kb.bed8 \
+        corrs_distalsFirst_above0.7_celltypes_500kb.bed8
 
     date
 __FINISH__
