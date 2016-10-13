@@ -17,7 +17,10 @@ Compile the code with:
 
 ## Easy usage:
 
-If you have an SGE cluster available (`qsub`), run `./doEverything.sh` and wait for the jobs to finish.
+If you have an SGE cluster available (`qsub`), run `./doEverything.sh fileOfPeakDensityAndCounts.txt TSSfile.bed6 [blacklistfile]`
+and wait for the jobs to finish. `fileOfPeakDensityAndCounts.txt` should contain one sample per line,
+tab delimited, containing /path/to/peak/file, /path/to/density/file, and Total mapped tags (in that order).
+The blacklist file is optional.
 
 
 # How it works, step-by-step
@@ -33,33 +36,23 @@ Start by running this script (preferably on a node of a computer cluster):
 After that has completed and created the file multi-tissue.master.hg19.bed, run
 the following command from the command line:
 
-    cut -f1-3 multi-tissue.master.hg19.bed > masterDHSs.bed3
+    cut -f1-3 multi-tissue.master.bed > masterDHSs.bed3
 
 Then run the following script, which gets the DNase signal strength in each cell
-type at each DHS. This script requires two integer parameters, which are indexes
-into the array of cell types (zero-based). This allows you to process multiple
-cell types simultaneously on a computer cluster.
+type at each DHS. This script is called using the qsub Array Job option (-t), allowing
+cell types to be process in batches of 10 simultaneously on a computer cluster.
 
-    getTagDensitiesInMasterListDHSs_pseudoParallel.sh idxMin idxMax
+    getTagDensitiesInMasterListDHSs_pseudoParallel.sh sampleFile [blacklist.txt]
 
-For example, you could submit the following jobs to a cluster:
 
-    qsub -cwd -N Get00to07 -S /bin/bash getTagDensitiesInMasterListDHSs_pseudoParallel.sh 0 7
-    qsub -cwd -N Get08to15 -S /bin/bash getTagDensitiesInMasterListDHSs_pseudoParallel.sh 8 15
-    qsub -cwd -N Get16to23 -S /bin/bash getTagDensitiesInMasterListDHSs_pseudoParallel.sh 16 23
-
-etc. etc. The first job would process the first 8 cell types (0-7), the next one
-would process the next 8 cell types (8-15), etc., simultaneously, with one job
-per node of a computer cluster. There are 82 cell types total (0-81).
-
-After all of those jobs have completed and produced 82 files in subdirectory
+After all of those jobs have completed and produced one file per sample in subdirectory
 tagDensities, run the following script:
 
     makeMasterFileWithTagSumVectors.sh
 
-This will create the file `masterDHSsAndTagCounts_82_hg19.bed4`, in which fields
+This will create the file `masterDHSsAndTagCounts.bed4`, in which fields
 1-3 are the coordinates of each DHS (150bp wide) observed in the genome in the
-82 cell types, and field 4 holds an 82-element, comma-delimited vector of
+N cell types, and field 4 holds an N-element, comma-delimited vector of
 normalized and scaled signal intensities (one per cell type) observed at the DHS
 displayed in fields 1-3.
 
@@ -93,7 +86,7 @@ support.
 This is the command I submitted to our cluster, to define promoter DHSs:
 
     qsub -cwd -N GetProms -S /bin/bash getPromoterDHSs \
-        EH_v2_TxStarts.bed6 masterDHSsAndTagCounts_82_hg19.bed4 10000 2500 20 100 promOutfile.bed13
+        EH_v2_TxStarts.bed6 masterDHSsAndTagCounts.bed4 10000 2500 20 100 promOutfile.bed13
 
 You can also run it directly from the command line, if desired; this one doesn't
 take very long to execute (a couple minutes, I think).
@@ -112,7 +105,7 @@ command like this:
         | uniq \
         | tr '@' '\t' \
         | sort-bed - \
-        > promDHSsAndTheirTSSs_EHv2_82celltypes_hg19.bed9
+        > promDHSsAndTheirTSSs.bed9
 
 (The middle commands are necessary to remove any duplicate rows arising from
 distinct lines in the TSS file whose first 4 columns are identical. If you use a
@@ -125,22 +118,22 @@ Often, multiple positions within a few bp of one another get called as TSSs for
 the same gene. Such TSSs will map to the same DHS. So next, we need to create a
 file containing only the unique DHSs, by doing this:
 
-    cut -f1-4 promDHSsAndTheirTSSs_EHv2_82celltypes_hg19.bed9 \
+    cut -f1-4 promDHSsAndTheirTSSs.bed9 \
         | tr '\t' '@' \
         | sort -k 1b,1 \
         | uniq \
         | tr '@' '\t' \
         | sort-bed - \
-        > promDHSsWithGeneNames_EHv2_82celltypes_hg19.bed4
+        > promDHSsWithGeneNames.bed4
 
 Lastly, we create a file in which each row contains the promoter DHS, gene name,
 and vector of normalized counts from the master list file, i.e., the vector that
 will be used in the correlation calculations:
 
     bedmap --exact --delim "\t" --echo --echo-map-id \
-        promDHSsWithGeneNames_EHv2_82celltypes_hg19.bed4 \
-        masterDHSsAndTagCounts_82_hg19.bed4 \
-        > promDHSsWithGeneNamesAndTagCounts_EHv2_82celltypes_hg19.bed5
+        promDHSsWithGeneNames.bed4 \
+        masterDHSsAndTagCounts.bed4 \
+        > promDHSsWithGeneNamesAndTagCounts.bed5
 
 ## Obtaining a list of "distal DHSs."
 
@@ -153,18 +146,18 @@ except:
 
 So, do the following:
 
-    cut -f1-3 promDHSsWithGeneNamesAndTagCounts_EHv2_82celltypes_hg19.bed5 \
+    cut -f1-3 promDHSsWithGeneNamesAndTagCounts.bed5 \
         | uniq \
-        | bedops -n -1 masterDHSsAndTagCounts_82_hg19.bed4 - \
+        | bedops -n -1 masterDHSsAndTagCounts.bed4 - \
         > nonprom_temp.bed4
 
 This gives the DHSs which aren't promoter DHSs. Exclude DHSs that are, say, 1kb
 from a promoter DHS:
 
     closest-features --shortest --dist nonprom_temp.bed4 \
-        promDHSsAndTheirTSSs_EHv2_82celltypes_hg19.bed9 \
+        promDHSsAndTheirTSSs.bed9 \
         | awk -F "|" '{dist=$3;if(dist<0){dist=-dist;}if(dist>=1000){print $1;}}' \
-            > nonPromoterDHSsAndTheirTagCounts_eachAtLeast1kbFromPromDHS_82celltypes.bed4
+            > nonPromoterDHSsAndTheirTagCounts_eachAtLeast1kbFromPromDHS.bed4
 
 Finally, filter these DHSs to include only those within your target distance
 from the nearest promoter DHS. Use the following command. The file it will
@@ -174,9 +167,9 @@ be in the format expected by the program I use to compute correlations.
 of course use a different radius if desired.
 
     bedmap --range 500000 --skip-unmapped --echo --echo-map \
-    promDHSsWithGeneNamesAndTagCounts_EHv2_82celltypes_hg19.bed5 \
-    nonPromoterDHSsAndTheirTagCounts_eachAtLeast1kbFromPromDHS_82celltypes.bed4 \
-      > inputForCorrelationCalculations_500kb_82celltypes.bed
+    promDHSsWithGeneNamesAndTagCounts.bed5 \
+    nonPromoterDHSsAndTheirTagCounts_eachAtLeast1kbFromPromDHS.bed4 \
+      > inputForCorrelationCalculations_500kb.bed
 
 
 ## Calculating correlations and storing them in files.
@@ -190,10 +183,10 @@ this and your preferred names for the output files to the following script, like
 this:
 
     qsub -cwd -N GetCorrs500kb0.7 -S /bin/bash calcCorrelations.sh \
-        inputForCorrelationCalculations_500kb_82celltypes.bed 0.7 corrs_promsFirst_EHv2_all_82celltypes_500kb.bed8 \
-        corrs_promsFirst_EHv2_above0.7_82celltypes_500kb.bed8 \
-        corrs_distalsFirst_EHv2_all_82celltypes_500kb.bed8 \
-        corrs_distalsFirst_EHv2_above0.7_82celltypes_500kb.bed8
+        inputForCorrelationCalculations_500kb.bed 0.7 corrs_promsFirst_all_celltypes_500kb.bed8 \
+        corrs_promsFirst_above0.7_celltypes_500kb.bed8 \
+        corrs_distalsFirst_all_celltypes_500kb.bed8 \
+        corrs_distalsFirst_above0.7_celltypes_500kb.bed8
 
 It will create 4 output files. One will contain all distal/promoter pairs and
 their correlations (Pearson's _r_), in the format promoter, gene name, distal
@@ -204,7 +197,7 @@ give you 2 files you don't want, or 3 files you don't want, or you might find
 uses for all 4. You can delete what you don't want, and use what you want.
 
 Once these files are created, it's a good idea to delete the input file (here,
-`inputForCorrelationCalculations_500kb_82celltypes.bed`), becuase it's really
+`inputForCorrelationCalculations_500kb.bed`), becuase it's really
 large, no longer needed, and can be recreated again if desired.
 
 That's all!
