@@ -48,20 +48,25 @@ do
     is_gz=$(basename "$pks" | grep -c '\.bed\.gz$')
     is_starch=$(basename "$pks" | grep -c '\.starch$')
     is_bed=$(basename "$pks" | grep -c '\.bed$')
+    score_col=7
+    columns=$(unstarch "$pks" | awk '{print NF; exit}' -)
+    if [ "$columns" -eq 5 ]; then
+        score_col=5
+    fi
 
     if [ "$is_gz" == "1" ]; then
         zcat "$pks" \
-            | awk -v p="$proj" '{print $1"\t"$2"\t"$3"\t"p"\t"$8}' - \
+            | awk -v p="$proj" -v s="$score_col" '{print $1"\t"$2"\t"$3"\t"p"\t"$s}' - \
             | bedops -n -1 - "$BLACKLIST" \
             >> "$tmp"
         N=$(zcat "$pks" | wc -l)
     elif [ "$is_starch" == "1" ]; then
         bedops -n -1 "$pks" "$BLACKLIST" \
-            | awk -v p="$proj" '{print $1"\t"$2"\t"$3"\t"p"\t"$8}' - \
+            | awk -v p="$proj" -v s="$score_col" '{print $1"\t"$2"\t"$3"\t"p"\t"$s}' - \
             >> "$tmp"
         N=$(unstarch "$pks" | wc -l)
     elif [ "$is_bed" == "1" ]; then
-        awk -v p="$proj" '{print $1"\t"$2"\t"$3"\t"p"\t"$8}' "$pks" \
+        awk -v p="$proj" -v s="$score_col" '{print $1"\t"$2"\t"$3"\t"p"\t"$s}' "$pks" \
             | bedops -n -1 - "$BLACKLIST" \
             >> "$tmp"
         N=$(wc -l < "$pks")
