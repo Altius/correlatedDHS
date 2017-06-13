@@ -80,7 +80,7 @@ submit -N "$SETUP_JOB" <<__SETUP__
 __SETUP__
 
 
-submit -hold_jid "$SETUP_JOB" -N "$DENS_JOB" -t 1-"$NUMFILES":10 <<__DENSITY__
+submit -hold_jid "$SETUP_JOB" -N "$DENS_JOB" <<__DENSITY__
     set -x
     date
 

@@ -18,8 +18,9 @@ fi
 
 # Each job handles 10 samples (or however many are left for the last job)
 MIN_IDX=$(( SGE_TASK_ID ))
-MAX_IDX=$(( MIN_IDX + 9 ))
-MAX_IDX=$(($SGE_TASK_LAST<$MAX_IDX?$SGE_TASK_LAST:$MAX_IDX))
+#MAX_IDX=$(( MIN_IDX + 9 ))
+#MAX_IDX=$(($SGE_TASK_LAST<$MAX_IDX?$SGE_TASK_LAST:$MAX_IDX))
+MAX_IDX=$(( SGE_TASK_ID ))
 
 OUTDIR=tagDensities
 mkdir -p $OUTDIR
@@ -37,7 +38,7 @@ do
         continue
     fi
     #if [ "$filenum" -gt "$MAX_IDX" ]; then
-    if [ "$linenum" -gt "$MAX_IDX" ]; then
+    if [ "$linenum" -gt 193 ]; then
         break
     fi
     file=$densityPath
