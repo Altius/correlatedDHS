@@ -31,16 +31,6 @@ MASTER_DHSs=masterDHSs.bed3
 linenum=1
 cat "$fileOfFilenames" | while read peakPath densityPath restOfLine
 do
-    #if [ "$filenum" -lt "$MIN_IDX" ]; then
-    if [ "$linenum" -lt "$MIN_IDX" ]; then
-        #((filenum++))
-        ((linenum++))
-        continue
-    fi
-    #if [ "$filenum" -gt "$MAX_IDX" ]; then
-    if [ "$linenum" -gt 193 ]; then
-        break
-    fi
     file=$densityPath
     if [ ! -s "$file" ]; then
         echo "Error:  File $file,"

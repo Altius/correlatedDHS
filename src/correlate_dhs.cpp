@@ -98,7 +98,7 @@ bool vecFromVecString(char* pString, vector<double>& vec)
 
 bool doEverything(ifstream& ifs, ofstream& ofs)
 {
-  const long BUFSIZE(900000L); //BUFSIZE(550000L);
+  const long BUFSIZE(5000000); // BUFSIZE(900000L); //BUFSIZE(550000L);
   char buf[BUFSIZE], *p;
   long linenum(0), fieldnum;
   string promChrom, promBeg, promEnd, promGene, promStringVec;
